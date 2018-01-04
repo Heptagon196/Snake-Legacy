@@ -27,8 +27,7 @@ class SnakeBody {
 };
 
 class SnakeMap {
-    //private:
-    public:
+    private:
         int head, tail;
         std::pair<int, int> food;
         int W, H;

@@ -51,7 +51,9 @@ void SnakeMap::InitMap(int W, int H) {
                 Map[x][y] = &VoidBlock;
             Map[x][y]->Show();
         }
+#ifdef linux
         cout << endl;
+#endif
     }
 }
 
