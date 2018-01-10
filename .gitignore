@@ -24,9 +24,7 @@
 *.lib
 
 # Executables
-judge
-spj
-judge.log
+snake
 *.exe
 *.out
 *.app

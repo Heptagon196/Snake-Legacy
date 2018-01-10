@@ -38,9 +38,10 @@ int main(int argc, char* argv[]) {
             break;
         }
         snake.MoveSnake(d);
-        gotoxy(1, 21);
         if (snake.isDead())
             break;
+        snake.UpdateChanges();
+        gotoxy(1, 21);
     }
     unhidecursor();
     return 0;

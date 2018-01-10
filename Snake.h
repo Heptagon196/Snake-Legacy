@@ -33,6 +33,7 @@ class SnakeMap {
         int W, H;
         BlockType* Map[100][100];
         std::vector<SnakeBody> Body;
+        std::vector<std::pair<int, int> > updates;
         bool dead;
 
         void MoveHeadTo(int x, int y);
@@ -49,6 +50,8 @@ class SnakeMap {
         void MoveSnake(Direction d);
 
         bool isDead();
+
+        void UpdateChanges();
 };
 
 #endif

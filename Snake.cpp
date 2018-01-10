@@ -39,10 +39,10 @@ SnakeBody::SnakeBody(int x, int y, int prv, int nxt) : x(x), y(y), prv(prv), nxt
 SnakeBody::SnakeBody(pair<int, int> p, int prv, int nxt) : x(p.first), y(p.second), prv(prv), nxt(nxt) {}
 
 void SnakeMap::InitMap(int W, int H) {
+    clear();
+    dead = false;
     this->W = W;
     this->H = H;
-    dead = false;
-    gotoxy(1, 1);
     for (int y = 1; y <= H; ++ y) {
         for (int x = 1; x <= W; ++ x) {
             if (x == 1 || x == W || y == 1 || y == H)
@@ -66,43 +66,33 @@ pair<int, int> SnakeMap::GetRandomPos() {
     return {x, y};
 }
 
-#define SetMap(pos, attr) Map[Body[pos].x][Body[pos].y] = &attr; gotoxy(Body[pos].x, Body[pos].y);
+#define SetMap(pos, attr) Map[Body[pos].x][Body[pos].y] = &attr; updates.push_back({Body[pos].x, Body[pos].y});
 
 void SnakeMap::NewFood() {
     food = GetRandomPos();
     Map[food.first][food.second] = &FoodBlock;
-    gotoxy(food.first, food.second);
-    FoodBlock.Show();
+    updates.push_back({food.first, food.second});
 }
 
 void SnakeMap::InitSnake() {
     Body.push_back({GetRandomPos(), 0, 0});
     head = tail = 0;
     SetMap(head, HeadBlock);
-    HeadBlock.Show();
     NewFood();
 }
 
 void SnakeMap::MoveHeadTo(int x, int y) {
-    if (Map[x][y] != &VoidBlock) {
-        dead = true;
-        return ;
-    }
     if (Body.size() == 1) {
         SetMap(head, VoidBlock);
-        VoidBlock.Show();
 
         Body[head] = {x, y, 0, 0};
         SetMap(head, HeadBlock);
-        HeadBlock.Show();
     } else {
         SetMap(tail, VoidBlock);
-        VoidBlock.Show();
 
         int p = tail;
         tail = Body[tail].prv;
         SetMap(head, BodyBlock);
-        BodyBlock.Show();
 
         Body[head].prv = p;
         Body[p].nxt = head;
@@ -110,7 +100,6 @@ void SnakeMap::MoveHeadTo(int x, int y) {
         Body[head].x = x;
         Body[head].y = y;
         SetMap(head, HeadBlock);
-        HeadBlock.Show();
     }
 }
 
@@ -129,19 +118,19 @@ void SnakeMap::MoveSnake(Direction d) {
     if (Map[x][y] == &FoodBlock) {
         AddToHead(x, y);
         NewFood();
-    } else {
+    } else if (Map[x][y] == &VoidBlock) {
         MoveHeadTo(x, y);
+    } else {
+        dead = true;
     }
 }
 
 void SnakeMap::AddToHead(int x, int y) {
     Body.push_back({x, y, 0, head});
     SetMap(head, BodyBlock);
-    BodyBlock.Show();
 
     head = (Body[head].prv = Body.size() - 1);
     SetMap(head, HeadBlock);
-    HeadBlock.Show();
 }
 
 bool SnakeMap::isDead() {
@@ -170,6 +159,14 @@ void SnakeMap::SaveMap(string filename) {
             if (x != 1 && x != W && y != 1 && y != H && Map[x][y] == &WallBlock)
                 fout << "wall " << x << ' ' << y << endl;
     fout.close();
+}
+
+void SnakeMap::UpdateChanges() {
+    for (const pair<int, int>& p : updates) {
+        gotoxy(p.first, p.second);
+        Map[p.first][p.second]->Show();
+    }
+    updates.clear();
 }
 
 #define Check(ch) (isdigit(ch) && ch - '0' < TypeID.size())
