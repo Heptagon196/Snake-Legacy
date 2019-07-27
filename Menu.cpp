@@ -61,6 +61,8 @@ int Menu(const vector<string>& List) {
         } else if (ch == '\n' || ch == '\r') {
             unhidecursor();
             return cur + 1;
+        } else if (ch == 'q') {
+            return List.size();
         }
         if (cur == -1) {
             cur = List.size() - 1;
