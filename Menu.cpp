@@ -4,6 +4,9 @@ using namespace std;
 const int Width = 79;
 
 int getLength(string str) {
+#ifndef linux
+    return str.length();
+#endif
     int tmp = 0;
     for (int i = 0; i < str.length(); ++ i) {
         if (str[i] < 0) {

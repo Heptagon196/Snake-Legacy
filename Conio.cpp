@@ -79,7 +79,7 @@ void clear() {
 
 void gotoxy(int x, int y) {
     COORD c;
-    c.X = x * 2;
+    c.X = x * 2 - 2;
     c.Y = y - 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
 }
