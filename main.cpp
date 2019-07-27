@@ -1,5 +1,6 @@
 #include "Snake.h"
 #include "Conio.h"
+#include "Menu.h"
 #include <iostream>
 using std::string;
 
@@ -11,17 +12,19 @@ inline void UpdateDirection(Direction& orig, Direction now) {
     orig = now;
 }
 
-int main(int argc, char* argv[]) {
+void InitGame() {
     srand(time(NULL));
     hidecursor();
     snake.InitMap(40, 20);
     snake.LoadMap("snake.map");
-    if (argc > 1 && (string) argv[1] == "edit") {
-        snake.EditMap("snake.map");
-        gotoxy(1, 21);
-        unhidecursor();
-        return 0;
-    }
+}
+
+void EditMode() {
+    snake.EditMap("snake.map");
+    gotoxy(1, 21);
+}
+
+void NormalMode() {
     snake.InitSnake();
     Direction d = (Direction)(randint(4) - 1);
     while (true) {
@@ -38,11 +41,28 @@ int main(int argc, char* argv[]) {
             break;
         }
         snake.MoveSnake(d);
-        if (snake.isDead())
+        if (snake.isDead()) {
+            clearcolor();
             break;
+        }
         snake.UpdateChanges();
         gotoxy(1, 21);
     }
-    unhidecursor();
+}
+
+int main() {
+    while (true) {
+        int mode = Menu({"Start Game", "Edit Map", "Exit"});
+        if (mode == 1) {
+            InitGame();
+            NormalMode();
+        } else if (mode == 2) {
+            InitGame();
+            EditMode();
+        } else if (mode == 3) {
+            unhidecursor();
+            return 0;
+        }
+    }
     return 0;
 }

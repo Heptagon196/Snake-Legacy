@@ -11,6 +11,7 @@ using std::ofstream;
 using std::endl;
 using std::string;
 using std::pair;
+using std::vector;
 
 int lastfg = -1, lastbg = -1;
 
@@ -28,12 +29,43 @@ void BlockType::Show() const {
     cout << content;
 }
 
-BlockType VoidBlock(WHITE, WHITE, "  ");
-BlockType HeadBlock(WHITE, BLUE, "  ");
-BlockType BodyBlock(WHITE, GREEN, "  ");
+BlockType VoidBlock(WHITE, WHITE,  "  ");
 BlockType WallBlock(WHITE, YELLOW, "  ");
-BlockType FoodBlock(WHITE, RED, "  ");
-BlockType Cursor(WHITE, BLACK, "  ");
+BlockType GateBlock(WHITE, PURPLE, "  ");
+BlockType HeadBlock(WHITE, BLUE,   "  ");
+BlockType BodyBlock(WHITE, GREEN,  "  ");
+BlockType FoodBlock(WHITE, RED,    "  ");
+BlockType Cursor   (WHITE, BLACK,  "  ");
+
+class TypeInfo {
+    private:
+        map<char, BlockType*> TypeAdress;
+        map<BlockType*, char> TypeID;
+    public:
+        TypeInfo(const vector<pair<char, BlockType*>>& TypeList) {
+            for (const pair<char, BlockType*>& Type : TypeList) {
+                TypeAdress[Type.first] = Type.second;
+                TypeID[Type.second] = Type.first;
+            }
+        };
+        BlockType* getAdress(char ch) {
+            return TypeAdress[ch];
+        }
+        char getID(BlockType* addr) {
+            return TypeID[addr];
+        }
+        int getSize() {
+            return TypeID.size();
+        }
+};
+
+TypeInfo Types({
+    {'0', &VoidBlock},
+    {'1', &WallBlock},
+    {'2', &GateBlock}   
+});
+
+vector<pair<int, int>> GatesRecord;
 
 SnakeBody::SnakeBody(int x, int y, int prv, int nxt) : x(x), y(y), prv(prv), nxt(nxt) {}
 SnakeBody::SnakeBody(pair<int, int> p, int prv, int nxt) : x(p.first), y(p.second), prv(prv), nxt(nxt) {}
@@ -75,6 +107,7 @@ void SnakeMap::NewFood() {
 }
 
 void SnakeMap::InitSnake() {
+    Body.clear();
     Body.push_back({GetRandomPos(), 0, 0});
     head = tail = 0;
     SetMap(head, HeadBlock);
@@ -103,27 +136,38 @@ void SnakeMap::MoveHeadTo(int x, int y) {
     }
 }
 
+#define FindNextPosition(x, y, d)\
+    if (d == Up) {\
+        y --;\
+    } else if (d == Down) {\
+        y ++;\
+    } else if (d == Left) {\
+        x --;\
+    } else {\
+        x ++;\
+    }
+
 void SnakeMap::MoveSnake(Direction d) {
     int x = Body[head].x;
     int y = Body[head].y;
-    if (d == Up) {
-        y --;
-    } else if (d == Down) {
-        y ++;
-    } else if (d == Left) {
-        x --;
-    } else {
-        x ++;
-    }
+    RECHECK_POINT:
+    FindNextPosition(x, y, d);
     if (Map[x][y] == &FoodBlock) {
         AddToHead(x, y);
         NewFood();
     } else if (Map[x][y] == &VoidBlock) {
         MoveHeadTo(x, y);
+    } else if (Map[x][y] == &GateBlock) {
+        pair<int, int> &dest = GatesRecord[randint(GatesRecord.size()) - 1];
+        x = dest.first;
+        y = dest.second;
+        goto RECHECK_POINT;
     } else {
         dead = true;
     }
 }
+
+#undef FindNextPosition
 
 void SnakeMap::AddToHead(int x, int y) {
     Body.push_back({x, y, 0, head});
@@ -139,14 +183,15 @@ bool SnakeMap::isDead() {
 
 void SnakeMap::LoadMap(string filename) {
     ifstream fin(filename);
-    string l;
-    while (fin >> l) {
-        if (l == "wall") {
-            int x, y;
-            fin >> x >> y;
-            Map[x][y] = &WallBlock;
-            gotoxy(x, y);
-            WallBlock.Show();
+    int id;
+    int x, y;
+    while (fin >> id) {
+        fin >> x >> y;
+        Map[x][y] = Types.getAdress(id + '0');
+        gotoxy(x, y);
+        Map[x][y]->Show();
+        if (id == Types.getID(&GateBlock) - '0') {
+            GatesRecord.push_back({x, y});
         }
     }
     fin.close();
@@ -156,8 +201,9 @@ void SnakeMap::SaveMap(string filename) {
     ofstream fout(filename);
     for (int x = 1; x <= W; ++ x)
         for (int y = 1; y <= H; ++ y)
-            if (x != 1 && x != W && y != 1 && y != H && Map[x][y] == &WallBlock)
-                fout << "wall " << x << ' ' << y << endl;
+            if (x != 1 && x != W && y != 1 && y != H && Map[x][y] != &VoidBlock) {
+                fout << Types.getID(Map[x][y]) << ' ' << x << ' ' << y << endl;
+            }
     fout.close();
 }
 
@@ -169,16 +215,12 @@ void SnakeMap::UpdateChanges() {
     updates.clear();
 }
 
-#define Check(ch) (isdigit(ch) && ch - '0' < TypeID.size())
+#define Check(ch) (isdigit(ch) && ch - '0' < Types.getSize())
 void SnakeMap::EditMap(string filename) {
     LoadMap(filename);
     int curx = 1, cury = 1;
     gotoxy(curx, cury);
     Cursor.Show();
-    map<char, BlockType*> TypeID= {
-        {'0', &VoidBlock},
-        {'1', &WallBlock}
-    };
     while (true) {
         char ch = getch();
         int bakcurx = curx;
@@ -194,40 +236,40 @@ void SnakeMap::EditMap(string filename) {
         } else if (ch == 'q') {
             break;
         } else if (Check(ch)) {
-            Map[curx][cury] = TypeID[ch];
+            Map[curx][cury] = Types.getAdress(ch);
             gotoxy(curx, cury);
-            TypeID[ch]->Show();
+            Types.getAdress(ch)->Show();
         } else if (ch == 'h') {
             while (!Check(ch))
                 ch = getch();
             for (int x = 1; x <= curx; x ++) {
-                Map[x][cury] = TypeID[ch];
+                Map[x][cury] = Types.getAdress(ch);
                 gotoxy(x, cury);
-                TypeID[ch]->Show();
+                Types.getAdress(ch)->Show();
             }
         } else if (ch == 'l') {
             while (!Check(ch))
                 ch = getch();
             for (int x = curx; x <= W; x ++) {
-                Map[x][cury] = TypeID[ch];
+                Map[x][cury] = Types.getAdress(ch);
                 gotoxy(x, cury);
-                TypeID[ch]->Show();
+                Types.getAdress(ch)->Show();
             }
         } else if (ch == 'k') {
             while (!Check(ch))
                 ch = getch();
             for (int y = 1; y <= cury; y ++) {
-                Map[curx][y] = TypeID[ch];
+                Map[curx][y] = Types.getAdress(ch);
                 gotoxy(curx, y);
-                TypeID[ch]->Show();
+                Types.getAdress(ch)->Show();
             }
         } else if (ch == 'j') {
             while (!Check(ch))
                 ch = getch();
             for (int y = cury; y <= H; y ++) {
-                Map[curx][y] = TypeID[ch];
+                Map[curx][y] = Types.getAdress(ch);
                 gotoxy(curx, y);
-                TypeID[ch]->Show();
+                Types.getAdress(ch)->Show();
             }
         }
         if (curx < 1)

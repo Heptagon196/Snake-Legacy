@@ -1,7 +1,7 @@
 .SILENT:
 FLAG = --std=c++11 -Dlinux
 CPP = g++
-DEPENDENCIES = ./main.o ./Snake.o ./Conio.o
+DEPENDENCIES = ./Menu.o ./main.o ./Conio.o ./Snake.o
 ifdef MAKE_RELEASE
 	FLAG += -O2
 endif
@@ -16,22 +16,25 @@ default:
 	make release
 
 snake: $(DEPENDENCIES)
-	echo "[4/4] Building snake"
+	 echo "[5/5] Building snake"
 	$(CPP) $(DEPENDENCIES) $(FLAG) -o snake
 
+./Menu.o: ./Menu.cpp
+	echo "[1/5] Compiling ./Menu.cpp"
+	$(CPP) -c $(FLAG) $< -o ./Menu.o
 ./main.o: ./main.cpp
-	echo "[1/4] Compiling ./main.cpp"
+	echo "[2/5] Compiling ./main.cpp"
 	$(CPP) -c $(FLAG) $< -o ./main.o
-./Snake.o: ./Snake.cpp
-	echo "[2/4] Compiling ./Snake.cpp"
-	$(CPP) -c $(FLAG) $< -o ./Snake.o
 ./Conio.o: ./Conio.cpp
-	echo "[3/4] Compiling ./Conio.cpp"
+	echo "[3/5] Compiling ./Conio.cpp"
 	$(CPP) -c $(FLAG) $< -o ./Conio.o
+./Snake.o: ./Snake.cpp
+	echo "[4/5] Compiling ./Snake.cpp"
+	$(CPP) -c $(FLAG) $< -o ./Snake.o
 
 clean:
 	echo "Cleaning files"
-	rm -rf ./main.o ./Snake.o ./Conio.o
+	rm -rf ./Menu.o ./main.o ./Conio.o ./Snake.o
 install:
 	echo "Installing snake to /usr/local/bin"
 	cp ./snake /usr/local/bin/
